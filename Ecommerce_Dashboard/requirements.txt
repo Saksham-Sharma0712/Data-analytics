@@ -1,0 +1,5 @@
+pandas>=2.0
+numpy>=1.26
+sqlalchemy>=2.0
+openpyxl>=3.1
+pymysql>=1.1        # only needed if you use MySQL

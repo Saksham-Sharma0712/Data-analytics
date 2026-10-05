@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>E-Commerce Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root, :root[data-theme="light"]{
+  --bg:#FFFFFF; --surface:#FAFAFA; --ink:#14213D; --muted:#5B6578; --line:#E1E5EC; --chip:#F2F4F7;
+  --accent:#0F8B8D; --accent-ink:#FFFFFF; --amber:#C97E10; --rose:#C4503A; --up:#177A4B; --down:#B8402C;
+  --font-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{
+  --bg:#0D1320; --surface:#151D2E; --ink:#E8ECF4; --muted:#97A3BA; --line:#26314A; --chip:#1F2A42;
+  --accent:#38C3C5; --accent-ink:#06222A; --amber:#F0B04A; --rose:#EE7B64; --up:#4FD08C; --down:#F28B77;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:inherit;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;margin-bottom:16px;}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,3.2vw,34px);letter-spacing:-.01em;margin:0;}
+.sub{color:var(--muted);margin:2px 0 0;}
+h2{font-family:var(--font-display);font-weight:500;font-size:17px;margin:0 0 2px;}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px;}
+
+/* filters */
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:12px;margin-bottom:16px;}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.flabel{width:76px;color:var(--muted);font-size:13px;flex:none;}
+select,button{font:inherit;color:inherit;}
+select{background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:6px 10px;}
+.chip{background:var(--chip);border:1px solid transparent;border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px;}
+.chip:hover{border-color:var(--muted);}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600;}
+.btn{background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;}
+.btn:hover{border-color:var(--muted);}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.drill{display:none;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);}
+.drill.on{display:flex;}
+.tag{background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:2px 8px;font-weight:600;}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+.kpi{padding:16px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0;}
+.kpi .k{color:var(--muted);font-size:13px;}
+.kpi .v{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,2.6vw,31px);letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+.kpi.lead .v{color:var(--accent);}
+.kpi .d{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.d .up{color:var(--up);font-weight:600;} .d .down{color:var(--down);font-weight:600;}
+
+/* grid + cards */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;min-width:0;}
+.s12{grid-column:span 12;} .s8{grid-column:span 8;} .s7{grid-column:span 7;} .s6{grid-column:span 6;} .s5{grid-column:span 5;} .s4{grid-column:span 4;}
+@media (max-width:900px){.s8,.s7,.s6,.s5,.s4{grid-column:span 12;}}
+.chart{position:relative;height:280px;}
+.chart.tall{height:320px;}
+.scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:420px;}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+th{color:var(--muted);font-weight:500;font-size:12.5px;}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
+tr:last-child td{border-bottom:0;}
+.seg{display:inline-block;padding:1px 8px;border-radius:6px;background:var(--chip);font-size:12.5px;}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+.toggle button{background:transparent;border:0;padding:5px 12px;cursor:pointer;font-size:13px;}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--surface);}
+.insights{margin:0;padding-left:18px;}
+.insights li{margin:6px 0;max-width:80ch;}
+.empty{color:var(--muted);padding:24px 0;text-align:center;}
+footer{color:var(--muted);font-size:12.5px;margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>E-Commerce Admin Dashboard</h1>
+      <p class="sub" id="period"></p>
+    </div>
+    <div class="frow">
+      <button class="btn" id="btnTheme" type="button">☀️ Light Mode</button>
+      <button class="btn" id="btnReset" type="button">Reset filters</button>
+      <button class="btn primary" id="btnExport" type="button">Export CSV</button>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Filters">
+    <div class="frow"><span class="flabel">Period</span>
+      <select id="selFrom" aria-label="From month"></select><span class="hint" style="margin:0">to</span>
+      <select id="selTo" aria-label="To month"></select>
+    </div>
+    <div class="frow"><span class="flabel">Category</span><span id="chipCat" class="frow"></span></div>
+    <div class="frow"><span class="flabel">Region</span><span id="chipReg" class="frow"></span></div>
+    <div class="frow"><span class="flabel">Order status</span><span id="chipSta" class="frow"></span></div>
+    <div class="drill" id="drill"></div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <div class="grid">
+    <div class="card s8">
+      <h2>Revenue and profit by month</h2>
+      <p class="hint">Click a month to zoom into it.</p>
+      <div class="chart tall"><canvas id="cTrend"></canvas></div>
+    </div>
+    <div class="card s4">
+      <h2>What the numbers say</h2>
+      <p class="hint">Updates with your filters.</p>
+      <ul class="insights" id="insights"></ul>
+    </div>
+
+    <div class="card s6">
+      <h2>Revenue by category</h2>
+      <p class="hint">Click a bar to drill into that category's products.</p>
+      <div class="chart"><canvas id="cCat"></canvas></div>
+    </div>
+    <div class="card s6">
+      <h2>Revenue by region</h2>
+      <p class="hint">Click a bar to filter to that region.</p>
+      <div class="chart"><canvas id="cReg"></canvas></div>
+    </div>
+
+    <div class="card s7">
+      <h2 id="prodTitle">Products</h2>
+      <div class="toggle" role="group" aria-label="Product ranking">
+        <button type="button" id="vTop" aria-pressed="true">Top performers</button>
+        <button type="button" id="vLow" aria-pressed="false">Low performers</button>
+      </div>
+      <div class="scroll"><table id="tProd"></table></div>
+    </div>
+    <div class="card s5">
+      <h2>Payment methods</h2>
+      <p class="hint">Share of orders.</p>
+      <div class="chart"><canvas id="cPay"></canvas></div>
+    </div>
+
+    <div class="card s5">
+      <h2>Customer segments</h2>
+      <p class="hint">Revenue by RFM segment (recency, frequency, spend).</p>
+      <div class="chart"><canvas id="cSeg"></canvas></div>
+    </div>
+    <div class="card s7">
+      <h2>Top customers</h2>
+      <p class="hint">Highest spenders in the selected period.</p>
+      <div class="scroll"><table id="tCust"></table></div>
+    </div>
+  </div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const D = __DATA__;
+
+(function () {
+  "use strict";
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const ML = m => { const p = m.split("-"); return MONTHS[+p[1]-1] + " '" + p[0].slice(2); };
+  const inr = v => {
+    const a = Math.abs(v);
+    if (a >= 1e7) return "₹" + (v/1e7).toFixed(2) + " Cr";
+    if (a >= 1e5) return "₹" + (v/1e5).toFixed(2) + " L";
+    return "₹" + Math.round(v).toLocaleString("en-IN");
+  };
+  const inrShort = v => {
+    const a = Math.abs(v);
+    if (a >= 1e7) return "₹" + +(v/1e7).toFixed(1) + "Cr";
+    if (a >= 1e5) return "₹" + +(v/1e5).toFixed(1) + "L";
+    if (a >= 1e3) return "₹" + +(v/1e3).toFixed(0) + "K";
+    return "₹" + v;
+  };
+  const num = v => Math.round(v).toLocaleString("en-IN");
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const $ = id => document.getElementById(id);
+
+  // row layout: 0 month, 1 product, 2 region, 3 status, 4 payment, 5 customer, 6 order id, 7 qty, 8 revenue, 9 profit
+  const LAST = D.months.length - 1;
+  const state = { from: 0, to: LAST, cats: new Set(), regions: new Set(), statuses: new Set(D.defaultStatuses), view: "top" };
+  let charts = {};
+
+  function filterRows(from, to, ignoreStatus) {
+    const c = state.cats, r = state.regions, s = state.statuses;
+    return D.rows.filter(x => x[0] >= from && x[0] <= to &&
+      (!c.size || c.has(D.products[x[1]].c)) && (!r.size || r.has(x[2])) && (ignoreStatus || s.has(x[3])));
+  }
+  function sumBy(rows, keyFn, valIx) {
+    const m = new Map();
+    for (const x of rows) { const k = keyFn(x); m.set(k, (m.get(k) || 0) + x[valIx]); }
+    return m;
+  }
+  function kpiOf(rows) {
+    let rev = 0, pro = 0, qty = 0; const o = new Set(), c = new Set();
+    for (const x of rows) { rev += x[8]; pro += x[9]; qty += x[7]; o.add(x[6]); c.add(x[5]); }
+    return { rev, pro, qty, orders: o.size, cust: c.size, aov: o.size ? rev / o.size : 0, margin: rev ? pro / rev * 100 : 0 };
+  }
+
+  /* ---------- theme-aware colours ---------- */
+  function colors() {
+    const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+    return { accent: g("--accent"), amber: g("--amber"), rose: g("--rose"), ink: g("--ink"), muted: g("--muted"), line: g("--line"), surface: g("--surface") };
+  }
+  function draw(id, cfg) {
+    if (typeof Chart === "undefined") return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart($(id), cfg);
+  }
+  function baseOptions(C, extra) {
+    return Object.assign({
+      responsive: true, maintainAspectRatio: false, animation: { duration: 200 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+      scales: {
+        x: { ticks: { color: C.muted }, grid: { display: false }, border: { color: C.line } },
+        y: { ticks: { color: C.muted, callback: inrShort }, grid: { color: C.line }, border: { display: false }, beginAtZero: true }
+      }
+    }, extra || {});
+  }
+
+  /* ---------- filter UI ---------- */
+  function chips(containerId, labels, set, onToggle, allowEmpty) {
+    const box = $(containerId); box.innerHTML = "";
+    labels.forEach((lab, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = lab;
+      b.setAttribute("aria-pressed", set.has(i) ? "true" : "false");
+      b.addEventListener("click", () => {
+        if (set.has(i)) { if (allowEmpty || set.size > 1) set.delete(i); } else set.add(i);
+        onToggle();
+      });
+      box.appendChild(b);
+    });
+  }
+  function buildFilters() {
+    const opts = D.months.map((m, i) => `<option value="${i}">${ML(m)}</option>`).join("");
+    $("selFrom").innerHTML = opts; $("selTo").innerHTML = opts;
+    $("selFrom").value = state.from; $("selTo").value = state.to;
+    chips("chipCat", D.categories, state.cats, render, true);
+    chips("chipReg", D.regions, state.regions, render, true);
+    chips("chipSta", D.statuses, state.statuses, render, false);
+  }
+  function syncDrill() {
+    const parts = [];
+    if (state.from === state.to) parts.push(`Month: <span class="tag">${ML(D.months[state.from])}</span>`);
+    if (state.cats.size === 1) parts.push(`Category: <span class="tag">${esc(D.categories[[...state.cats][0]])}</span>`);
+    if (state.regions.size === 1) parts.push(`Region: <span class="tag">${esc(D.regions[[...state.regions][0]])}</span>`);
+    const el = $("drill");
+    el.classList.toggle("on", parts.length > 0);
+    el.innerHTML = parts.length ? "Drilled into " + parts.join(" · ") : "";
+  }
+
+  /* ---------- sections ---------- */
+  function renderKpis(k, p, n) {
+    const delta = (cur, prev) => {
+      if (!p || !prev) return "No earlier period to compare";
+      const pct = (cur - prev) / prev * 100, cls = pct >= 0 ? "up" : "down";
+      return `<span class="${cls}">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%</span> vs prior ${n} month${n > 1 ? "s" : ""}`;
+    };
+    const items = [
+      ["Revenue", inr(k.rev), delta(k.rev, p && p.rev), "lead"],
+      ["Profit", inr(k.pro), delta(k.pro, p && p.pro), ""],
+      ["Orders", num(k.orders), delta(k.orders, p && p.orders), ""],
+      ["Average order value", inr(k.aov), delta(k.aov, p && p.aov), ""],
+      ["Customers", num(k.cust), delta(k.cust, p && p.cust), ""],
+      ["Profit margin", k.margin.toFixed(1) + "%", p ? `${(k.margin - p.margin >= 0 ? "+" : "")}${(k.margin - p.margin).toFixed(1)} pts vs prior` : "No earlier period to compare", ""],
+    ];
+    $("kpis").innerHTML = items.map(i => `<div class="kpi ${i[3]}"><div class="k">${i[0]}</div><div class="v">${i[1]}</div><div class="d">${i[2]}</div></div>`).join("");
+  }
+
+  function renderTrend(rows, C) {
+    const rev = sumBy(rows, x => x[0], 8), pro = sumBy(rows, x => x[0], 9);
+    const idx = []; for (let m = state.from; m <= state.to; m++) idx.push(m);
+    draw("cTrend", {
+      type: "bar",
+      data: { labels: idx.map(m => ML(D.months[m])), datasets: [
+        { type: "bar", label: "Revenue", data: idx.map(m => rev.get(m) || 0), backgroundColor: C.accent, borderRadius: 3, order: 2 },
+        { type: "line", label: "Profit", data: idx.map(m => pro.get(m) || 0), borderColor: C.amber, backgroundColor: C.amber, tension: .3, pointRadius: 3, order: 1 } ] },
+      options: Object.assign(baseOptions(C, {
+        plugins: { legend: { display: true, labels: { color: C.muted, usePointStyle: true, boxWidth: 8 } },
+                   tooltip: { callbacks: { label: c => `${c.dataset.label}: ${inr(c.parsed.y)}` } } } }), {
+        onClick: (evt, els) => { if (els.length && idx.length > 1) { state.from = state.to = idx[els[0].index]; render(); } },
+        onHover: (e, els) => { e.native.target.style.cursor = els.length && idx.length > 1 ? "pointer" : "default"; } })
+    });
+  }
+
+  function hbar(id, entries, C, onClick, tooltipExtra) {
+    draw(id, {
+      type: "bar",
+      data: { labels: entries.map(e => e[0]), datasets: [{ data: entries.map(e => e[1]), backgroundColor: C.accent, borderRadius: 3 }] },
+      options: Object.assign(baseOptions(C, {
+        indexAxis: "y",
+        scales: { x: { ticks: { color: C.muted, callback: inrShort }, grid: { color: C.line }, border: { display: false }, beginAtZero: true },
+                  y: { ticks: { color: C.ink }, grid: { display: false }, border: { color: C.line } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => inr(c.parsed.x), afterLabel: tooltipExtra || (() => "") } } }
+      }), { onClick: onClick, onHover: (e, els) => { e.native.target.style.cursor = onClick && els.length ? "pointer" : "default"; } })
+    });
+  }
+
+  function renderCat(rows, C) {
+    const m = sumBy(rows, x => D.products[x[1]].c, 8);
+    const entries = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    hbar("cCat", entries.map(e => [D.categories[e[0]], e[1]]), C, (evt, els) => {
+      if (!els.length) return;
+      const ci = entries[els[0].index][0];
+      if (state.cats.size === 1 && state.cats.has(ci)) state.cats.clear(); else { state.cats.clear(); state.cats.add(ci); }
+      render();
+    });
+  }
+  function renderReg(rows, C) {
+    const m = sumBy(rows, x => x[2], 8);
+    const entries = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    hbar("cReg", entries.map(e => [D.regions[e[0]], e[1]]), C, (evt, els) => {
+      if (!els.length) return;
+      const ri = entries[els[0].index][0];
+      if (state.regions.size === 1 && state.regions.has(ri)) state.regions.clear(); else { state.regions.clear(); state.regions.add(ri); }
+      render();
+    });
+  }
+
+  function renderPay(rows, C) {
+    const o = new Map();
+    for (const x of rows) { if (!o.has(x[4])) o.set(x[4], new Set()); o.get(x[4]).add(x[6]); }
+    const entries = [...o.entries()].map(e => [D.payments[e[0]], e[1].size]).sort((a, b) => b[1] - a[1]);
+    const palette = [C.accent, C.amber, C.rose, "#3D5A99", "#8A94A6"];
+    const total = entries.reduce((s, e) => s + e[1], 0) || 1;
+    draw("cPay", {
+      type: "doughnut",
+      data: { labels: entries.map(e => e[0]), datasets: [{ data: entries.map(e => e[1]), backgroundColor: entries.map((_, i) => palette[i % palette.length]), borderColor: C.surface, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "58%", animation: { duration: 200 },
+        plugins: { legend: { position: "right", labels: { color: C.ink, usePointStyle: true, boxWidth: 8 } },
+                   tooltip: { callbacks: { label: c => `${c.label}: ${num(c.parsed)} orders (${(c.parsed / total * 100).toFixed(1)}%)` } } } }
+    });
+  }
+
+  function renderSeg(rows, C) {
+    const rev = sumBy(rows, x => D.customers[x[5]].s, 8);
+    const cnt = new Map();
+    for (const x of rows) { const s = D.customers[x[5]].s; if (!cnt.has(s)) cnt.set(s, new Set()); cnt.get(s).add(x[5]); }
+    const entries = D.segments.map((s, i) => [i, rev.get(i) || 0]).filter(e => cnt.has(e[0]));
+    hbar("cSeg", entries.map(e => [D.segments[e[0]], e[1]]), C, null, c => `${num(cnt.get(entries[c.dataIndex][0]).size)} customers`);
+  }
+
+  function renderProducts(rows) {
+    const agg = new Map();
+    D.products.forEach((p, i) => { if (!state.cats.size || state.cats.has(p.c)) agg.set(i, { rev: 0, pro: 0, qty: 0 }); });
+    for (const x of rows) { const a = agg.get(x[1]); if (a) { a.rev += x[8]; a.pro += x[9]; a.qty += x[7]; } }
+    let list = [...agg.entries()].map(e => ({ i: e[0], ...e[1] }));
+    list.sort((a, b) => state.view === "top" ? b.rev - a.rev : a.rev - b.rev);
+    list = list.slice(0, 10);
+    const scope = state.cats.size === 1 ? " in " + D.categories[[...state.cats][0]] : "";
+    $("prodTitle").textContent = (state.view === "top" ? "Top 10 products" : "Lowest 10 products") + scope;
+    $("tProd").innerHTML = `<thead><tr><th>Product</th><th>Category</th><th class="n">Units</th><th class="n">Revenue</th><th class="n">Margin</th></tr></thead><tbody>` +
+      list.map(r => `<tr><td>${esc(D.products[r.i].n)}</td><td>${esc(D.categories[D.products[r.i].c])}</td><td class="n">${num(r.qty)}</td><td class="n">${inr(r.rev)}</td><td class="n">${r.rev ? (r.pro / r.rev * 100).toFixed(1) + "%" : "–"}</td></tr>`).join("") + "</tbody>";
+  }
+
+  function renderCustomers(rows) {
+    const agg = new Map();
+    for (const x of rows) { let a = agg.get(x[5]); if (!a) { a = { rev: 0, o: new Set() }; agg.set(x[5], a); } a.rev += x[8]; a.o.add(x[6]); }
+    const list = [...agg.entries()].sort((a, b) => b[1].rev - a[1].rev).slice(0, 10);
+    if (!list.length) { $("tCust").innerHTML = ""; return; }
+    $("tCust").innerHTML = `<thead><tr><th>Customer</th><th>City</th><th>Segment</th><th class="n">Orders</th><th class="n">Revenue</th></tr></thead><tbody>` +
+      list.map(([ci, a]) => { const c = D.customers[ci]; return `<tr><td>${esc(c.n)}</td><td>${esc(c.l)}</td><td><span class="seg">${esc(D.segments[c.s])}</span></td><td class="n">${num(a.o.size)}</td><td class="n">${inr(a.rev)}</td></tr>`; }).join("") + "</tbody>";
+  }
+
+  function renderInsights(rows, k) {
+    const el = $("insights"); const out = [];
+    if (!rows.length) { el.innerHTML = `<li class="empty">No orders match these filters. Widen the period or clear a filter.</li>`; return; }
+    const byM = sumBy(rows, x => x[0], 8), bestM = [...byM.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (byM.size > 1) out.push(`${ML(D.months[bestM[0]])} was the strongest month with ${inr(bestM[1])} in revenue.`);
+    const cat = new Map();
+    for (const x of rows) { const c = D.products[x[1]].c; const a = cat.get(c) || [0, 0]; a[0] += x[8]; a[1] += x[9]; cat.set(c, a); }
+    const cl = [...cat.entries()].sort((a, b) => b[1][0] - a[1][0]);
+    out.push(`${D.categories[cl[0][0]]} leads on revenue and brings in ${(cl[0][1][0] / k.rev * 100).toFixed(0)}% of the total.`);
+    if (cl.length > 1) {
+      const mg = cl.map(e => [e[0], e[1][1] / e[1][0] * 100]).sort((a, b) => b[1] - a[1]);
+      out.push(`${D.categories[mg[0][0]]} has the best margin (${mg[0][1].toFixed(0)}%); ${D.categories[mg[mg.length-1][0]]} has the thinnest (${mg[mg.length-1][1].toFixed(0)}%).`);
+    }
+    const cust = [...sumBy(rows, x => x[5], 8).values()].sort((a, b) => b - a);
+    const top = Math.max(1, Math.ceil(cust.length * 0.1));
+    out.push(`The top 10% of customers (${num(top)}) account for ${(cust.slice(0, top).reduce((s, v) => s + v, 0) / k.rev * 100).toFixed(0)}% of revenue.`);
+    const all = filterRows(state.from, state.to, true), allO = new Set(), badO = new Set();
+    for (const x of all) { allO.add(x[6]); if (x[3] >= 3) badO.add(x[6]); }
+    if (allO.size) out.push(`${(badO.size / allO.size * 100).toFixed(1)}% of orders in this period were cancelled or returned.`);
+    el.innerHTML = out.map(t => `<li>${esc(t)}</li>`).join("");
+  }
+
+  /* ---------- main render ---------- */
+  function render() {
+    if (state.from > state.to) { const t = state.from; state.from = state.to; state.to = t; }
+    $("selFrom").value = state.from; $("selTo").value = state.to;
+    buildFilters(); syncDrill();
+    const C = colors();
+    const rows = filterRows(state.from, state.to), k = kpiOf(rows);
+    const n = state.to - state.from + 1;
+    const prev = state.from - n >= 0 ? kpiOf(filterRows(state.from - n, state.from - 1)) : null;
+    renderKpis(k, prev, n);
+    renderTrend(rows, C); renderCat(rows, C); renderReg(rows, C); renderPay(rows, C); renderSeg(rows, C);
+    renderProducts(rows); renderCustomers(rows); renderInsights(rows, k);
+    $("vTop").setAttribute("aria-pressed", state.view === "top"); $("vLow").setAttribute("aria-pressed", state.view === "low");
+    $("foot").textContent = `${num(rows.length)} order lines · ${num(k.orders)} orders shown. Revenue is after discounts; profit is revenue minus product cost.`;
+    window.__lastRender = { rows: rows.length, kpi: k };
+  }
+
+  /* ---------- export ---------- */
+  function exportCsv() {
+    const rows = filterRows(state.from, state.to);
+    const head = ["month", "order_id", "customer", "product", "category", "region", "status", "payment", "quantity", "revenue", "profit"];
+    const q = v => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [head.join(",")].concat(rows.map(x => [D.months[x[0]], x[6], q(D.customers[x[5]].n), q(D.products[x[1]].n),
+      q(D.categories[D.products[x[1]].c]), D.regions[x[2]], D.statuses[x[3]], q(D.payments[x[4]]), x[7], x[8], x[9]].join(",")));
+    try {
+      const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+      const a = document.createElement("a"); a.href = url; a.download = "dashboard_export.csv";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { alert("Export is not available in this view. Open the downloaded dashboard.html to export."); }
+  }
+
+  /* ---------- wire up ---------- */
+  $("period").textContent = `Data from ${D.meta.from} to ${D.meta.to} · amounts in Indian rupees · demo data`;
+  $("btnTheme").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme") || "light";
+    const nxt = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", nxt);
+    $("btnTheme").textContent = nxt === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode";
+  });
+  $("selFrom").addEventListener("change", e => { state.from = +e.target.value; render(); });
+  $("selTo").addEventListener("change", e => { state.to = +e.target.value; render(); });
+  $("btnReset").addEventListener("click", () => {
+    state.from = 0; state.to = LAST; state.cats.clear(); state.regions.clear(); state.statuses = new Set(D.defaultStatuses); render();
+  });
+  $("btnExport").addEventListener("click", exportCsv);
+  $("vTop").addEventListener("click", () => { state.view = "top"; render(); });
+  $("vLow").addEventListener("click", () => { state.view = "low"; render(); });
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {}).catch(() => {});
+
+  if (typeof Chart === "undefined") {
+    $("foot").textContent = "Charts could not load. Connect to the internet so Chart.js can load, then refresh.";
+  }
+  render();
+})();
+</script>
+</body>
+</html>
