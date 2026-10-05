@@ -1,0 +1,11 @@
+# Render Blueprint: deploys the dashboard as a free Static Site.
+# Render runs the build command (regenerates data + dashboard) and serves the "output" folder.
+services:
+  - type: web
+    name: ecommerce-admin-dashboard
+    runtime: static
+    buildCommand: pip install -r requirements.txt && python run_all.py && python verify.py
+    staticPublishPath: ./output
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
